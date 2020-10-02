@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/elbv2"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -19,10 +20,11 @@ type Config struct {
 }
 
 type AWSClient struct {
-	ec2conn *ec2.EC2
-	r53conn *route53.Route53
-	region  string
-	s3conn  *s3.S3
+	ec2conn   *ec2.EC2
+	r53conn   *route53.Route53
+	s3conn    *s3.S3
+	elbv2conn *elbv2.ELBV2
+	region    string
 }
 
 func (c *Config) Client() (*AWSClient, error) {
@@ -33,27 +35,13 @@ func (c *Config) Client() (*AWSClient, error) {
 		return &AWSClient{}, err
 	}
 
-	//awsbaseConfig := &awsbase.Config{
-	//	AccessKey: c.AccessKey,
-	//	Region:    c.Region,
-	//	SecretKey: c.SecretKey,
-	//}
-
-	//sess, accountID, partition, err := awsbase.GetSessionWithAccountIDAndPartition(awsbaseConfig)
-	//if err != nil {
-	//	return nil, fmt.Errorf("error configuring Terraform AWS Provider: %w", err)
-	//}
-
 	client := &AWSClient{
-		ec2conn: ec2.New(sess.Copy(&aws.Config{})),
-		region:  c.Region,
+		ec2conn:   ec2.New(sess.Copy(&aws.Config{})),
+		r53conn:   route53.New(sess.Copy(&aws.Config{})),
+		s3conn:    s3.New(sess.Copy(&aws.Config{})),
+		elbv2conn: elbv2.New(sess.Copy(&aws.Config{})),
+		region:    c.Region,
 	}
-
-	route53Config := &aws.Config{}
-
-	client.s3conn = s3.New(sess.Copy(&aws.Config{}))
-
-	client.r53conn = route53.New(sess.Copy(route53Config))
 
 	return client, nil
 }

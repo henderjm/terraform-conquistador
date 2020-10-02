@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -15,8 +14,9 @@ Internet Gateway
 
 */
 type networking struct {
-	Vpc AWSResourceId
-	Ig  AWSResourceId
+	Vpc     AWSResourceId
+	Ig      AWSResourceId
+	Subnets []AWSResourceId
 }
 
 func NewNetworking() networking { return networking{} }
@@ -30,9 +30,14 @@ func (n *networking) Import(c *client) (networking, error) {
 	if err != nil {
 		return networking{}, err
 	}
+	subnets, err := importSubnets(c)
+	if err != nil {
+		return networking{}, err
+	}
 	return networking{
-		Vpc: vpc,
-		Ig:  ig,
+		Vpc:     vpc,
+		Ig:      ig,
+		Subnets: subnets,
 	}, nil
 }
 
@@ -94,18 +99,37 @@ func importIg(c *client) (AWSResourceId, error) {
 	return ig, nil
 }
 
-func handleAWSError(err error) error {
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
-		}
+func importSubnets(c *client) ([]AWSResourceId, error) {
+	fmt.Println("searching-for-subnets")
+	conn := c.awsClient.ec2conn
+	input := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:VPC"),
+				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
+			},
+			{
+				Name:   aws.String("tag:Name"),
+				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
+			},
+		},
 	}
-	return err
+
+	result, err := conn.DescribeSubnets(input)
+	if err != nil {
+		handleAWSError(err)
+		return []AWSResourceId{}, err
+	}
+
+	var subnets []AWSResourceId
+
+	for _, s := range result.Subnets {
+		r := AWSResourceId{
+			Id: s.SubnetId,
+		}
+		subnets = append(subnets, r)
+
+	}
+
+	return subnets, nil
 }
