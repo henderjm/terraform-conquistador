@@ -54,11 +54,14 @@ func (c *client) ImportTerraformResources() error {
 		return err
 	}
 
+	// import loadbalancing resources
 	lb := NewELB()
 	c.awsResources.elb, err = lb.Import(c)
 	if err != nil {
 		return err
 	}
+
+	// next resource
 	return nil
 }
 
@@ -68,7 +71,9 @@ func (c *client) UpdateTerraformStateFile() {
 	fmt.Printf("terraform import -var-file=vars.tfvars aws_internet_gateway.ig %s\n", aws.StringValue(c.awsResources.networking.Ig.Id))
 
 	// print ALB
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_lb.portal_lb %s\n", aws.StringValue(c.awsResources.elb.alb.Id))
+	fmt.Printf("terraform import -var-file=vars.tfvars aws_lb.portal_lb %s\n", aws.StringValue(c.awsResources.elb.arn.Id))
+	fmt.Printf("terraform import -var-file=vars.tfvars aws_subnet.lb_subnets[0] %s\n", aws.StringValue(c.awsResources.elb.subnets[0].Id))
+	fmt.Printf("terraform import -var-file=vars.tfvars aws_subnet.lb_subnets[1] %s\n", aws.StringValue(c.awsResources.elb.subnets[1].Id))
 
 	// print ALB security groups
 }

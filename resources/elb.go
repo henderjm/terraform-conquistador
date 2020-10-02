@@ -12,24 +12,26 @@ import (
 /*
 ALB
 */
+type lb struct {
+	arn     AWSResourceId
+	subnets []AWSResourceId
+}
 
 type elb struct {
-	alb AWSResourceId
+	lb
 }
 
 func NewELB() elb { return elb{} }
 
 func (e *elb) Import(c *client) (elb, error) {
-	a, err := importALB(c)
+	lb, err := importALB(c)
 	if err != nil {
 		return elb{}, err
 	}
-	return elb{
-		alb: a,
-	}, nil
+	return lb, nil
 }
 
-func importALB(c *client) (AWSResourceId, error) {
+func importALB(c *client) (elb, error) {
 	fmt.Println("searching-for-alb")
 	conn := c.awsClient.elbv2conn
 	input := &elbv2.DescribeLoadBalancersInput{
@@ -41,16 +43,32 @@ func importALB(c *client) (AWSResourceId, error) {
 	result, err := conn.DescribeLoadBalancers(input)
 	if err != nil {
 		handleAWSError(err)
-		return AWSResourceId{}, err
+		return elb{}, err
 	}
 
 	if len(result.LoadBalancers) != 1 {
-		return AWSResourceId{}, errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
+		return elb{}, errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
 	}
 
-	alb := AWSResourceId{
+	var subnets []AWSResourceId
+	for _, s := range result.LoadBalancers[0].AvailabilityZones {
+		r := AWSResourceId{
+			Id: s.SubnetId,
+		}
+		subnets = append(subnets, r)
+
+	}
+
+	id := AWSResourceId{
 		Id: result.LoadBalancers[0].LoadBalancerArn,
 	}
 
-	return alb, nil
+	lb := elb{
+		lb{
+			arn:     id,
+			subnets: subnets,
+		},
+	}
+
+	return lb, nil
 }

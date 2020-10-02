@@ -14,9 +14,8 @@ Internet Gateway
 
 */
 type networking struct {
-	Vpc     AWSResourceId
-	Ig      AWSResourceId
-	Subnets []AWSResourceId
+	Vpc AWSResourceId
+	Ig  AWSResourceId
 }
 
 func NewNetworking() networking { return networking{} }
@@ -30,14 +29,9 @@ func (n *networking) Import(c *client) (networking, error) {
 	if err != nil {
 		return networking{}, err
 	}
-	subnets, err := importSubnets(c)
-	if err != nil {
-		return networking{}, err
-	}
 	return networking{
-		Vpc:     vpc,
-		Ig:      ig,
-		Subnets: subnets,
+		Vpc: vpc,
+		Ig:  ig,
 	}, nil
 }
 
@@ -97,39 +91,4 @@ func importIg(c *client) (AWSResourceId, error) {
 	}
 
 	return ig, nil
-}
-
-func importSubnets(c *client) ([]AWSResourceId, error) {
-	fmt.Println("searching-for-subnets")
-	conn := c.awsClient.ec2conn
-	input := &ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:VPC"),
-				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
-			},
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
-			},
-		},
-	}
-
-	result, err := conn.DescribeSubnets(input)
-	if err != nil {
-		handleAWSError(err)
-		return []AWSResourceId{}, err
-	}
-
-	var subnets []AWSResourceId
-
-	for _, s := range result.Subnets {
-		r := AWSResourceId{
-			Id: s.SubnetId,
-		}
-		subnets = append(subnets, r)
-
-	}
-
-	return subnets, nil
 }
