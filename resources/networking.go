@@ -20,19 +20,17 @@ type networking struct {
 
 func NewNetworking() networking { return networking{} }
 
-func (n *networking) Import(c *client) (networking, error) {
-	vpc, err := importVPC(c)
+func (net *networking) Import(c *client) error {
+	var err error
+	net.Vpc, err = importVPC(c)
 	if err != nil {
-		return networking{}, err
+		return err
 	}
-	ig, err := importIg(c)
+	net.Ig, err = importIg(c)
 	if err != nil {
-		return networking{}, err
+		return err
 	}
-	return networking{
-		Vpc: vpc,
-		Ig:  ig,
-	}, nil
+	return nil
 }
 
 func importVPC(c *client) (AWSResourceId, error) {

@@ -49,14 +49,14 @@ func (c *client) ImportTerraformResources() error {
 	var err error
 	// import networking
 	n := NewNetworking()
-	c.awsResources.networking, err = n.Import(c)
+	err = n.Import(c)
 	if err != nil {
 		return err
 	}
 
 	// import loadbalancing resources
 	lb := NewELB()
-	c.awsResources.elb, err = lb.Import(c)
+	err = lb.Import(c)
 	if err != nil {
 		return err
 	}

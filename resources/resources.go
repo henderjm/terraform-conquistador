@@ -1,7 +1,7 @@
 package resources
 
 type Resource interface {
-	Import() (Resource, error)
+	Import(c *client) error
 }
 
 type AWSResourceId struct {

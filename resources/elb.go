@@ -23,15 +23,15 @@ type elb struct {
 
 func NewELB() elb { return elb{} }
 
-func (e *elb) Import(c *client) (elb, error) {
-	lb, err := importALB(c)
+func (e *elb) Import(c *client) error {
+	err := e.importALB(c)
 	if err != nil {
-		return elb{}, err
+		return err
 	}
-	return lb, nil
+	return nil
 }
 
-func importALB(c *client) (elb, error) {
+func (e *elb) importALB(c *client) error {
 	fmt.Println("searching-for-alb")
 	conn := c.awsClient.elbv2conn
 	input := &elbv2.DescribeLoadBalancersInput{
@@ -43,11 +43,11 @@ func importALB(c *client) (elb, error) {
 	result, err := conn.DescribeLoadBalancers(input)
 	if err != nil {
 		handleAWSError(err)
-		return elb{}, err
+		return err
 	}
 
 	if len(result.LoadBalancers) != 1 {
-		return elb{}, errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
+		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
 	}
 
 	var subnets []AWSResourceId
@@ -63,12 +63,8 @@ func importALB(c *client) (elb, error) {
 		Id: result.LoadBalancers[0].LoadBalancerArn,
 	}
 
-	lb := elb{
-		lb{
-			arn:     id,
-			subnets: subnets,
-		},
-	}
+	e.arn = id
+	e.subnets = subnets
 
-	return lb, nil
+	return nil
 }
