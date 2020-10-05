@@ -20,10 +20,11 @@ type client struct {
 
 type AwsResources struct {
 	networking networking
+	routeTable routeTable
 	elb        elb
 }
 
-func NewClient(eN, p, t, oF string) *client {
+func NewClient(eN, p, t, oF string) client {
 	fmt.Println("creating client")
 	tags := strings.Split(t, ",")
 	config := Config{
@@ -36,7 +37,7 @@ func NewClient(eN, p, t, oF string) *client {
 	if err != nil {
 		fmt.Errorf("%v", err)
 	}
-	return &client{
+	return client{
 		envName:    eN,
 		phase:      p,
 		tags:       tags,
@@ -54,6 +55,13 @@ func (c *client) ImportTerraformResources() error {
 		return err
 	}
 
+	// import route tables
+	rt := NewRouteTable()
+	err = rt.Import(c)
+	if err != nil {
+		return err
+	}
+
 	// import loadbalancing resources
 	lb := NewELB()
 	err = lb.Import(c)
@@ -62,18 +70,24 @@ func (c *client) ImportTerraformResources() error {
 	}
 
 	// next resource
+	c.awsResources = AwsResources{
+		networking: n,
+		routeTable: rt,
+		elb:        lb,
+	}
 	return nil
 }
 
 func (c *client) UpdateTerraformStateFile() {
 	// print networking
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_vpc.base_vpc %s\n", aws.StringValue(c.awsResources.networking.Vpc.Id))
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_internet_gateway.ig %s\n", aws.StringValue(c.awsResources.networking.Ig.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_vpc.base_vpc %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Vpc.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_internet_gateway.ig %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Ig.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_route_table.internet_access_through_ig %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.routeTable.InternetGateway.Id))
 
 	// print ALB
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_lb.portal_lb %s\n", aws.StringValue(c.awsResources.elb.arn.Id))
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_subnet.lb_subnets[0] %s\n", aws.StringValue(c.awsResources.elb.subnets[0].Id))
-	fmt.Printf("terraform import -var-file=vars.tfvars aws_subnet.lb_subnets[1] %s\n", aws.StringValue(c.awsResources.elb.subnets[1].Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_lb.portal_lb %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.arn.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_subnet.lb_subnets[0]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[0].Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_subnet.lb_subnets[1]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[1].Id))
 
 	// print ALB security groups
 }

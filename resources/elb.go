@@ -56,7 +56,6 @@ func (e *elb) importALB(c *client) error {
 			Id: s.SubnetId,
 		}
 		subnets = append(subnets, r)
-
 	}
 
 	id := AWSResourceId{

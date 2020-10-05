@@ -8,7 +8,7 @@ import (
 )
 
 /*
-aws subnet
+aws routeTable
 */
 
 type subnet struct {
