@@ -13,10 +13,25 @@ aws routeTable
 */
 
 type routeTable struct {
-	InternetGateway AWSResourceId
+	table             AWSResourceId
+	routes            []*ec2.Route
+	InterTgwRoutes    []route
+	ExternalTgwRoutes []route
+	NatRoutes         []route
+	IgwRoutes         []route
+	tag               string
 }
 
-func NewRouteTable() routeTable { return routeTable{} }
+type route struct {
+	DestCidr  string
+	GatewayID string
+}
+
+func NewRouteTable(t string) routeTable {
+	return routeTable{
+		tag: t,
+	}
+}
 
 func (r *routeTable) Import(c *client) error {
 	err := r.importRouteTables(c)
@@ -33,17 +48,13 @@ func (r *routeTable) importRouteTables(c *client) error {
 	input := &ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:VPC"),
-				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
-			},
-			{
 				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(fmt.Sprintf("%s-Pub-RT", c.envName))},
+				Values: []*string{aws.String(fmt.Sprintf("%s-%s", c.envName, r.tag))},
 			},
 		},
 	}
 
-	result, err := conn.DescribeRouteTables(input)
+	var result, err = conn.DescribeRouteTables(input)
 	if err != nil {
 		handleAWSError(err)
 		return err
@@ -53,6 +64,38 @@ func (r *routeTable) importRouteTables(c *client) error {
 		return errors.New(fmt.Sprintf("found: %d vpc(s), should only find 1", len(result.RouteTables)))
 	}
 
-	r.InternetGateway.Id = result.RouteTables[0].RouteTableId
+	r.table.Id = result.RouteTables[0].RouteTableId
+	for _, awsRoute := range result.RouteTables[0].Routes {
+
+		routeConf := route{
+			DestCidr:  aws.StringValue(awsRoute.DestinationCidrBlock),
+			GatewayID: "",
+		}
+
+		if awsRoute.TransitGatewayId != nil {
+			routeConf.GatewayID = aws.StringValue(awsRoute.TransitGatewayId)
+			if aws.StringValue(awsRoute.TransitGatewayId) == c.internalTgw {
+				r.InterTgwRoutes = append(r.InterTgwRoutes, routeConf)
+			} else if aws.StringValue(awsRoute.TransitGatewayId) == c.externalTgw {
+				r.ExternalTgwRoutes = append(r.ExternalTgwRoutes, routeConf)
+			} else {
+				fmt.Printf(
+					"error associating Transit Gateway `%s`. It matched neither internal: `%s` or external: `%s`\n",
+					aws.StringValue(awsRoute.TransitGatewayId),
+					c.internalTgw,
+					c.externalTgw,
+				)
+			}
+		}
+		if awsRoute.NatGatewayId != nil {
+			routeConf.GatewayID = aws.StringValue(awsRoute.NatGatewayId)
+			r.NatRoutes = append(r.NatRoutes, routeConf)
+		}
+		if awsRoute.GatewayId != nil && aws.StringValue(awsRoute.GatewayId) != "local" {
+			routeConf.GatewayID = aws.StringValue(awsRoute.GatewayId)
+			r.IgwRoutes = append(r.IgwRoutes, routeConf)
+		}
+	}
+	r.routes = result.RouteTables[0].Routes
 	return nil
 }

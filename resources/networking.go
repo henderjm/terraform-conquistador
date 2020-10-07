@@ -15,7 +15,7 @@ Internet Gateway
 */
 type networking struct {
 	Vpc AWSResourceId
-	Ig  AWSResourceId
+	Igw AWSResourceId
 }
 
 func NewNetworking() networking { return networking{} }
@@ -26,7 +26,7 @@ func (net *networking) Import(c *client) error {
 	if err != nil {
 		return err
 	}
-	net.Ig, err = importIg(c)
+	net.Igw, err = importIg(c)
 	if err != nil {
 		return err
 	}

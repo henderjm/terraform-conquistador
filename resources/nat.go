@@ -4,66 +4,56 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/aws/aws-sdk-go/service/ec2"
 
 	"github.com/aws/aws-sdk-go/aws"
 )
 
 /*
-ALB
+Nat Gateway
 */
-type lb struct {
-	arn     AWSResourceId
-	subnets []AWSResourceId
+
+type natgw struct {
+	nat    AWSResourceId
+	subnet AWSResourceId
 }
 
-type elb struct {
-	lb
-}
+func NewNatGateway() natgw { return natgw{} }
 
-func NewELB() elb { return elb{} }
-
-func (e *elb) Import(c *client) error {
-	err := e.importALB(c)
+func (n *natgw) Import(c *client) error {
+	err := n.importNat(c)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *elb) importALB(c *client) error {
-	fmt.Println("searching-for-alb")
-	conn := c.awsClient.elbv2conn
-	input := &elbv2.DescribeLoadBalancersInput{
-		Names: []*string{
-			aws.String(fmt.Sprintf("%s-Public-ALB", c.envName)),
+func (n *natgw) importNat(c *client) error {
+	fmt.Println("searching-for-nat-gateway")
+	conn := c.awsClient.ec2conn
+	input := &ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{ // TODO: PR To fix this
+			{
+				Name:   aws.String("tag:VPC"),
+				Values: []*string{aws.String(fmt.Sprintf("%s", c.envName))},
+			},
 		},
 	}
 
-	result, err := conn.DescribeLoadBalancers(input)
+	result, err := conn.DescribeNatGateways(input)
 	if err != nil {
 		handleAWSError(err)
 		return err
 	}
 
-	if len(result.LoadBalancers) != 1 {
-		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
+	if len(result.NatGateways) != 1 {
+		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.NatGateways)))
 	}
 
-	var subnets []AWSResourceId
-	for _, s := range result.LoadBalancers[0].AvailabilityZones {
-		r := AWSResourceId{
-			Id: s.SubnetId,
-		}
-		subnets = append(subnets, r)
-	}
+	ngw := result.NatGateways[0]
 
-	id := AWSResourceId{
-		Id: result.LoadBalancers[0].LoadBalancerArn,
-	}
-
-	e.arn = id
-	e.subnets = subnets
+	n.nat.Id = ngw.NatGatewayId
+	n.subnet.Id = ngw.SubnetId
 
 	return nil
 }
