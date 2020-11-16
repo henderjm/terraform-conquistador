@@ -61,7 +61,7 @@ func (r *routeTable) importRouteTables(c *client) error {
 	}
 
 	if len(result.RouteTables) != 1 {
-		return errors.New(fmt.Sprintf("found: %d vpc(s), should only find 1", len(result.RouteTables)))
+		return errors.New(fmt.Sprintf("found: %d route table(s), should only find 1", len(result.RouteTables)))
 	}
 
 	r.table.Id = result.RouteTables[0].RouteTableId

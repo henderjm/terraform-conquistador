@@ -105,21 +105,21 @@ func (c *client) ImportTerraformResources() error {
 
 func (c *client) UpdateTerraformStateFile() {
 	// print networking
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_vpc.base_vpc %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Vpc.Id))
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_internet_gateway.ig %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Igw.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' aws_vpc.base_vpc %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Vpc.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' aws_internet_gateway.ig %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.networking.Igw.Id))
 
 	// print ALB
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' aws_lb.portal_lb %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.arn.Id))
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_subnet.lb_subnets[0]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[0].Id))
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_subnet.lb_subnets[1]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[1].Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' aws_lb.portal_lb %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.arn.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_subnet.lb_subnets[0]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[0].Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_subnet.lb_subnets[1]' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elb.subnets[1].Id))
 
 	// print Nat Gateway
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_nat_gateway.nat_gateway' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.natGateway.nat.Id))
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_eip.nat_eip' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elasticIp.ip.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_nat_gateway.nat_gateway' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.natGateway.nat.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_eip.nat_eip' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.elasticIp.ip.Id))
 
 	// print import route tables
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_route_table.public_subnet_rt' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.publicRT.table.Id))
-	fmt.Printf("terraform import -state \"%s\" -var-file='%s-vars.tfvars' 'aws_route_table.private_subnet_rt' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.privateRT.table.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_route_table.public_subnet_rt' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.publicRT.table.Id))
+	fmt.Printf("terraform import -state \"%s\" -var-file='./vars/%s-vars.tfvars' 'aws_route_table.private_subnet_rt' %s\n", c.outputFile, c.envName, aws.StringValue(c.awsResources.privateRT.table.Id))
 }
 
 func (c *client) CreateRouteTableVarFile() {

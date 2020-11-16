@@ -46,7 +46,7 @@ func (e *eip) importEIP(c *client) error {
 	}
 
 	if len(result.Addresses) != 1 {
-		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.Addresses)))
+		return errors.New(fmt.Sprintf("found: %d elastic ip(s), should only find 1", len(result.Addresses)))
 	}
 
 	e.ip.Id = result.Addresses[0].PublicIp

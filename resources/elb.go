@@ -47,7 +47,7 @@ func (e *elb) importALB(c *client) error {
 	}
 
 	if len(result.LoadBalancers) != 1 {
-		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.LoadBalancers)))
+		return errors.New(fmt.Sprintf("found: %d loadbalancers(s), should only find 1", len(result.LoadBalancers)))
 	}
 
 	var subnets []AWSResourceId

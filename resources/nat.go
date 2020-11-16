@@ -47,7 +47,7 @@ func (n *natgw) importNat(c *client) error {
 	}
 
 	if len(result.NatGateways) != 1 {
-		return errors.New(fmt.Sprintf("found: %d ig(s), should only find 1", len(result.NatGateways)))
+		return errors.New(fmt.Sprintf("found: %d nat gateways(s), should only find 1", len(result.NatGateways)))
 	}
 
 	ngw := result.NatGateways[0]
